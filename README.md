@@ -30,32 +30,54 @@ Convert a shapefile to CSV with centroid coordinates:
 python process_shapefile.py
 ```
 
-
 By default, this looks for `out.shp` and creates `output.csv`. You can modify the input/output paths in the script.
 
 ### Look Up Coordinates
 
-Look up coordinates by address or parcel ID:
+The lookup_coordinates script now supports two commands: `lookup` and `process`.
 
+#### Looking up coordinates:
 ```bash
 # Search by address (default)
-python lookup_coordinates.py "123 MAIN ST"
+python lookup_coordinates.py lookup "123 MAIN ST"
 
 # Search by partial address
-python lookup_coordinates.py "MAIN"
+python lookup_coordinates.py lookup "MAIN"
 
 # Search by parcel ID
-python lookup_coordinates.py "R72 12307 0032" --field parcel_id
+python lookup_coordinates.py lookup "R72 12307 0032" --field parcel_id
 
 # Use a different csv file
-python lookup_coordinates.py "MAIN" --csv path/to/coordinates.csv
+python lookup_coordinates.py lookup "MAIN" --csv path/to/coordinates.csv
 ```
 
+#### Processing and joining data:
+```bash
+python lookup_coordinates.py process --csv output.csv --db parcels.db --output result.csv
+```
 
-#### Options:
+#### Lookup Options:
 - `search_term`: Address or parcel ID to search for
 - `--csv`: Path to the CSV file (default: output.csv)
 - `--field`: Field to search in ('address' or 'parcel_id', default: address)
+
+#### Process Options:
+- `--csv`: Input CSV file path
+- `--db`: SQLite database path (default: parcels.db)
+- `--output`: Output CSV path (default: result.csv)
+- `--id-field`: Parcel ID field name (default: TAXPINNO)
+
+### Convert CSV to JSON
+
+Convert the result CSV file to a JSON array:
+
+```bash
+python csv_to_json.py result.csv
+# or specify custom output path
+python csv_to_json.py result.csv --output data.json
+```
+
+The script will create a JSON file with the same name as the input CSV (but with .json extension) if no output path is specified.
 
 ## CSV File Structure
 
@@ -73,3 +95,5 @@ The script expects the following columns in the CSV file:
 - Address searches are case-insensitive and support partial matches
 - Multiple matches will be displayed if found
 - Invalid geometries in the shapefile will be skipped during processing
+- The process command in lookup_coordinates.py joins the CSV data with a SQLite database
+- The csv_to_json.py script handles NaN values and provides proper JSON formatting

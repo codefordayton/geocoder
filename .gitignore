@@ -4,3 +4,5 @@
 *.shx
 *.csv
 *.swp
+*.json
+*.db
