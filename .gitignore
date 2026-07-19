@@ -6,3 +6,9 @@
 *.swp
 *.json
 *.db
+
+# Python
+__pycache__/
+*.pyc
+env/
+.DS_Store

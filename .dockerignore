@@ -1,0 +1,20 @@
+# Keep the build context small — only app.py + geocoder.db are needed in the image.
+env/
+__pycache__/
+*.pyc
+.git/
+.DS_Store
+
+# Large source data (not needed at runtime; geocoder.db is pre-built)
+out.shp
+out.shx
+out.dbf
+out.prj
+output.csv
+housing.json
+housing_survey.csv
+housingout.csv
+result.csv
+result.json
+output.db
+*.zip

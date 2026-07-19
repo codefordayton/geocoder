@@ -79,6 +79,66 @@ python csv_to_json.py result.csv --output data.json
 
 The script will create a JSON file with the same name as the input CSV (but with .json extension) if no output path is specified.
 
+## Web Service
+
+The geocoder can run as a REST API (FastAPI) that returns parcel coordinates by
+parcel ID or address.
+
+### 1. Build the lookup index
+
+The API reads from a compact, indexed SQLite database instead of scanning the
+226MB `output.csv` on every request. Build it once:
+
+```bash
+python build_index.py            # output.csv -> geocoder.db (~29MB)
+```
+
+### 2. Run locally
+
+```bash
+pip install -r requirements-web.txt
+uvicorn app:app --reload
+```
+
+Interactive docs are served at `http://localhost:8000/docs`.
+
+### Endpoints
+
+| Endpoint | Description |
+| --- | --- |
+| `GET /health` | Liveness check; returns parcel count |
+| `GET /geocode?parcel_id=R72 12307 0032` | Exact parcel ID lookup |
+| `GET /geocode?address=4060 DELPHOS` | Partial, case-insensitive address lookup |
+
+Example:
+
+```bash
+curl "http://localhost:8000/geocode?address=4060%20DELPHOS"
+# {"count":1,"results":[{"parcel_id":"R72 12307 0032","address":"4060 DELPHOS AVE",
+#   "zip":"45402","latitude":39.763...,"longitude":-84.251...}]}
+```
+
+Provide exactly one of `parcel_id` or `address`. Address matches are substrings,
+so partial terms may return multiple results (capped at 50).
+
+### Deploy to Google Cloud Run
+
+The `geocoder.db` index is baked into the container image (read-only), so the
+service is stateless and scales to zero when idle.
+
+```bash
+# Prereqs: gcloud CLI authenticated, a project selected, geocoder.db built.
+./deploy.sh
+```
+
+To run the container locally:
+
+```bash
+docker build -t parcel-geocoder .
+docker run -p 8080:8080 parcel-geocoder
+curl "http://localhost:8080/health"
+```
+
 ## CSV File Structure
 
 The script expects the following columns in the CSV file:

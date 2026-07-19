@@ -1,0 +1,5 @@
+# Runtime dependencies for the web service only.
+# The geocoder.db index is pre-built (see build_index.py), so pandas/geopandas
+# are NOT needed at runtime — keeping the container image small.
+fastapi==0.139.2
+uvicorn[standard]==0.51.0
