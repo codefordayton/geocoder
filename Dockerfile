@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -6,11 +6,13 @@ WORKDIR /app
 COPY requirements-web.txt .
 RUN pip install --no-cache-dir -r requirements-web.txt
 
-# App code and the pre-built lookup index.
-COPY app.py .
-COPY geocoder.db .
+# The parcel index is rebuilt from the County's live parcel layer by
+# fetch_parcels.py and published as the `geocoder-data` release asset (~30 MB).
+# Baking it in keeps the service stateless and read-only.
+ADD https://github.com/codefordayton/geocoder/releases/download/geocoder-data/geocoder.db /app/geocoder.db
 
-# Cloud Run injects PORT; default to 8080 for local `docker run`.
+COPY app.py .
+
 ENV PORT=8080
 EXPOSE 8080
 

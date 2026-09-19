@@ -86,8 +86,15 @@ parcel ID or address.
 
 ### 1. Build the lookup index
 
-The API reads from a compact, indexed SQLite database instead of scanning the
-226MB `output.csv` on every request. Build it once:
+The API reads from a compact, indexed SQLite database. The simplest way to build
+it needs no shapefile and no GIS libraries — it pages through the County's live
+parcel layer and asks for centroids:
+
+```bash
+python fetch_parcels.py          # County ArcGIS layer -> geocoder.db (~273k parcels, ~10 minutes)
+```
+
+The older route still works if you have the shapefile-derived CSV:
 
 ```bash
 python build_index.py            # output.csv -> geocoder.db (~29MB)
@@ -120,6 +127,21 @@ curl "http://localhost:8000/geocode?address=4060%20DELPHOS"
 
 Provide exactly one of `parcel_id` or `address`. Address matches are substrings,
 so partial terms may return multiple results (capped at 50).
+
+### Deploy to Railway
+
+The production service runs on Railway from this repo's `Dockerfile`, which downloads
+`geocoder.db` from the `geocoder-data` GitHub release. A monthly workflow
+(`.github/workflows/geocoder-data.yml`) rebuilds the index from the County layer,
+re-uploads it, and bumps `LAST_BUILD` so Railway redeploys. To refresh by hand:
+
+```bash
+python fetch_parcels.py
+gh release upload geocoder-data geocoder.db --clobber
+```
+
+It is also the backend for the `geocode` tool in
+[OpenDayton](https://github.com/codefordayton/opendayton).
 
 ### Deploy to Google Cloud Run
 

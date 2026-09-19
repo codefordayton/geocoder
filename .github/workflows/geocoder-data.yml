@@ -1,0 +1,47 @@
+name: Rebuild parcel index
+
+# Rebuilds geocoder.db from the Montgomery County Auditor's live parcel layer,
+# publishes it to the `geocoder-data` release, and bumps LAST_BUILD so Railway
+# redeploys with the fresh index.
+
+on:
+  schedule:
+    - cron: "41 9 2 * *"   # 09:41 UTC on the 2nd of each month
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build geocoder.db from the County parcel layer
+        run: python fetch_parcels.py --out geocoder.db
+      - name: Sanity check
+        run: |
+          python - <<'PY'
+          import sqlite3
+          n = sqlite3.connect("geocoder.db").execute("SELECT count(*) FROM parcels").fetchone()[0]
+          assert n > 250_000, n
+          print(n, "parcels")
+          PY
+      - name: Publish to the geocoder-data release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload geocoder-data geocoder.db --clobber
+          gh release edit geocoder-data --notes "Rebuilt $(date -u +%F) from the County parcel layer by the geocoder-data workflow."
+      - name: Record the build so Railway redeploys
+        run: |
+          git config user.name "geocoder-data workflow"
+          git config user.email "noreply@codefordayton.org"
+          date -u +%F > LAST_BUILD
+          git add LAST_BUILD
+          git commit -m "geocoder-data: rebuilt $(date -u +%F)" || exit 0
+          git push
