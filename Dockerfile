@@ -16,5 +16,6 @@ COPY app.py .
 ENV PORT=8080
 EXPOSE 8080
 
-# Shell form so $PORT expands at runtime.
-CMD exec uvicorn app:app --host 0.0.0.0 --port ${PORT}
+# Shell form so $PORT expands at runtime. Bind "::" (dual-stack) so the service
+# is reachable over Railway's IPv6-only private network as well as IPv4.
+CMD exec uvicorn app:app --host :: --port ${PORT}
